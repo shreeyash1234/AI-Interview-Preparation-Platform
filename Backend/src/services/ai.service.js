@@ -57,24 +57,36 @@ async function generateInterviewReport({ resume, selfDescription, jobDescription
 
 
 
-async function generatePdfFromHtml(htmlContent) {
-    const browser = await puppeteer.launch()
-    const page = await browser.newPage();
-    await page.setContent(htmlContent, { waitUntil: "networkidle0" })
 
-    const pdfBuffer = await page.pdf({
-        format: "A4", margin: {
-            top: "20mm",
-            bottom: "20mm",
-            left: "15mm",
-            right: "15mm"
-        }
+async function generatePdfFromHtml(htmlContent) {
+    const browser = await puppeteer.launch({
+        headless: true,
+        executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
     })
 
-    await browser.close()
+    try {
+        const page = await browser.newPage()
 
-    return pdfBuffer
+        await page.setContent(htmlContent, {
+            waitUntil: "networkidle0"
+        })
+
+        const pdfBuffer = await page.pdf({
+            format: "A4",
+            margin: {
+                top: "20mm",
+                bottom: "20mm",
+                left: "15mm",
+                right: "15mm"
+            }
+        })
+
+        return pdfBuffer
+    } finally {
+        await browser.close()
+    }
 }
+
 
 async function generateResumePdf({ resume, selfDescription, jobDescription }) {
 
@@ -95,6 +107,8 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
                         The resume should not be so lengthy, it should ideally be 1-2 pages long when converted to PDF. Focus on quality rather than quantity and make sure to include all the relevant information that can increase the candidate's chances of getting an interview call for the given job description.
                     `
 
+    console.log("Starting Gemini API request...");
+
     const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: prompt,
@@ -104,6 +118,7 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
         }
     })
 
+    console.log("Gemini API request completed!");
 
     const jsonContent = JSON.parse(response.text)
 

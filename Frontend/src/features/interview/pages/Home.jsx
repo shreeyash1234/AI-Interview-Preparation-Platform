@@ -9,15 +9,36 @@ const Home = () => {
     const [ jobDescription, setJobDescription ] = useState("")
     const [ selfDescription, setSelfDescription ] = useState("")
     const resumeInputRef = useRef()
+    const [resumeFile, setResumeFile] = useState(null)
 
     const navigate = useNavigate()
 
-    const handleGenerateReport = async () => {
-        const resumeFile = resumeInputRef.current.files[ 0 ]
-        const data = await generateReport({ jobDescription, selfDescription, resumeFile })
-        navigate(`/interview/${data._id}`)
+   const handleGenerateReport = async () => {
+    if (!jobDescription.trim()) {
+        alert("Please enter a job description")
+        return
     }
 
+    if (!resumeFile && !selfDescription.trim()) {
+        alert("Please upload a resume or enter a self-description")
+        return
+    }
+
+    try {
+        const data = await generateReport({
+            jobDescription,
+            selfDescription,
+            resumeFile
+        })
+
+        if (data?._id) {
+            navigate(`/interview/${data._id}`)
+        }
+    } catch (error) {
+        console.error("Failed to generate interview report:", error)
+        alert("Could not generate the interview report. Please try again.")
+    }
+}
     if (loading) {
         return (
             <main className='loading-screen'>
@@ -67,23 +88,58 @@ const Home = () => {
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
                             </span>
                             <h2>Your Profile</h2>
-                        </div>
+                        </div>             
+{/* Upload Resume */}
+<div className='upload-section'>
+    <label className='section-label'>
+        Upload Resume
+        <span className='badge badge--best'>Best Results</span>
+    </label>
 
-                        {/* Upload Resume */}
-                        <div className='upload-section'>
-                            <label className='section-label'>
-                                Upload Resume
-                                <span className='badge badge--best'>Best Results</span>
-                            </label>
-                            <label className='dropzone' htmlFor='resume'>
-                                <span className='dropzone__icon'>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 16 12 12 8 16" /><line x1="12" y1="12" x2="12" y2="21" /><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" /></svg>
-                                </span>
-                                <p className='dropzone__title'>Click to upload or drag &amp; drop</p>
-                                <p className='dropzone__subtitle'>PDF or DOCX (Max 5MB)</p>
-                                <input ref={resumeInputRef} hidden type='file' id='resume' name='resume' accept='.pdf,.docx' />
-                            </label>
-                        </div>
+    <label className='dropzone' htmlFor='resume'>
+        <span className='dropzone__icon'>
+            {resumeFile ? "✅" : "📤"}
+        </span>
+
+        <p className='dropzone__title'>
+            {resumeFile
+                ? resumeFile.name
+                : "Click to upload your resume"}
+        </p>
+
+        <p className='dropzone__subtitle'>
+            {resumeFile
+                ? "Resume selected successfully"
+                : "PDF only (Max 5MB)"}
+        </p>
+
+        <input
+            ref={resumeInputRef}
+            hidden
+            type='file'
+            id='resume'
+            name='resume'
+            accept='.pdf'
+            onChange={(e) => {
+                const file = e.target.files[0]
+
+                if (!file) {
+                    setResumeFile(null)
+                    return
+                }
+
+                if (file.size > 5 * 1024 * 1024) {
+                    alert("Resume must be smaller than 5MB")
+                    e.target.value = ""
+                    setResumeFile(null)
+                    return
+                }
+
+                setResumeFile(file)
+            }}
+        />
+    </label>
+</div>
 
                         {/* OR Divider */}
                         <div className='or-divider'><span>OR</span></div>
